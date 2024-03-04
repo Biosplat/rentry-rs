@@ -87,7 +87,3 @@ This project is open for development, and contributions are welcome. Please ensu
 - **Hex**: For encoding and decoding hexadecimal values.
 - **Nanoid**: To generate unique identifiers for URLs and edit codes.
 - **Thiserror & Tower-HTTP**: For error handling and HTTP utilities.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
