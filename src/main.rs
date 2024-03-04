@@ -72,19 +72,6 @@ async fn setup_db() -> DBState {
     }
 }
 
-async fn page(State(db_state): State<DBState>, Path(url): Path<String>) -> (StatusCode, Html<String>) {
-    if let Some(url) = db_state.urls.find_one(doc! {"url": url}, None).await.expect("failed to search for url") {
-        if let Some(doc) = db_state.docs.find_one(doc!{"hash": url.content_hash}, None).await.expect("failed to search for document") {
-            let html = markdown::to_html(&doc.content);
-            (StatusCode::OK, Html(html))
-        } else {
-            (StatusCode::NOT_FOUND, Html("Document Not Found".to_string()))
-        }
-    } else {
-        (StatusCode::NOT_FOUND, Html("Not Found".to_string()))
-    }
-}
-
 fn is_valid_url(url: &str) -> bool {
     url.len() >= 8 && 
     url.len() <= 32 && 
@@ -147,7 +134,7 @@ async fn create_paste(State(db_state): State<DBState>, extract::Json(payload): e
                 url: None,
                 edit_code: None,
                 success: false,
-                message: Some("Custom edid code must be valid ascii and between 8 and 32 characters long.".to_string()),
+                message: Some("Custom edit code must be valid ascii and between 8 and 32 characters long.".to_string()),
             }));
         },
         None => {
