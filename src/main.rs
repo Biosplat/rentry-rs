@@ -1,5 +1,10 @@
+use askama::Template;
 use axum::{
-    extract::{self, Path, State}, http::StatusCode, response::{Html, IntoResponse}, routing::{get, post}, Json, Router
+    extract::{self, Path, State},
+    http::StatusCode,
+    response::{Html, IntoResponse},
+    routing::{get, post},
+    Json, Router,
 };
 use hex::ToHex;
 use models::{CreateEdit, CreateEditResponse, CreatePost, CreatePostResponse, Document, Url};
@@ -9,10 +14,15 @@ use mongodb::{
     Client, Collection, IndexModel,
 };
 use nanoid::nanoid;
+use pages::ErrorResponse;
+use pulldown_cmark::{html, HeadingLevel, Tag};
 use thiserror::Error;
 use tower_http::services::ServeDir;
 
-pub mod models;
+mod models;
+mod pages;
+mod errors;
+mod routes;
 
 #[derive(Debug, Clone)]
 pub struct DBState {
@@ -20,20 +30,6 @@ pub struct DBState {
     pub docs: Collection<Document>,
 }
 
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("MongoDB Error: {0}")]
-    MongoDB(#[from] mongodb::error::Error)
-}
-
-impl IntoResponse for Error {
-    fn into_response(self) -> axum::response::Response {
-        let status_code = match self {
-            Error::MongoDB(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        (status_code, "Internal Error").into_response()
-    }
-}
 
 async fn setup_db() -> DBState {
     let client_options = ClientOptions::parse("mongodb://mongoadmin:secret@rocky.home.arpa:27017")
@@ -73,44 +69,61 @@ async fn setup_db() -> DBState {
 }
 
 fn is_valid_url(url: &str) -> bool {
-    url.len() >= 8 && 
-    url.len() <= 32 && 
-    url.chars().all(|c| c.is_ascii_alphanumeric())
+    url.len() >= 8 && url.len() <= 32 && url.chars().all(|c| c.is_ascii_alphanumeric())
 }
 
 fn is_valid_edit_code(edit_code: &str) -> bool {
-    edit_code.len() >= 8 &&
-    edit_code.len() <= 32 &&
-    edit_code.chars().all(|a| char::is_ascii(&a))
+    edit_code.len() >= 8 && edit_code.len() <= 32 && edit_code.chars().all(|a| char::is_ascii(&a))
 }
 
 /// Creates a document entry if none exists, otherwise returns the hash of the exisiting entry
-async fn ensure_doc_entry(db_state: &DBState, content: String, hash: String) -> Result<String, Error> {
-    let doc = db_state.docs.find_one(doc!{"hash": &hash}, None).await?;
+async fn ensure_doc_entry(
+    db_state: &DBState,
+    content: String,
+    hash: String,
+) -> Result<String, errors::Error> {
+    let doc = db_state.docs.find_one(doc! {"hash": &hash}, None).await?;
     match doc {
         Some(doc) => {
             println!("using existing doc: {}", doc.hash);
             Ok(doc.hash)
-        },
+        }
         None => {
-            db_state.docs.insert_one(Document {
-                content: content,
-                hash: hash.clone(),
-            }, None).await?;
+            db_state
+                .docs
+                .insert_one(
+                    Document {
+                        content: content,
+                        hash: hash.clone(),
+                    },
+                    None,
+                )
+                .await?;
             Ok(hash)
-        },
+        }
     }
 }
 
 /// creates an entry in the url table that points to the document with `content_hash`
 ///
 /// IMPORTANT: This method **DOES NOT** check if the url is valid or not!
-async fn create_url_entry(db_state: &DBState, url: String, edit_code: String, content_hash: &str) -> Result<Json<CreatePostResponse>, Error> {
-    db_state.urls.insert_one(Url {
-        edit_code: edit_code.clone(),
-        url: url.clone(),
-        content_hash: content_hash.to_string(),
-    }, None).await?;
+async fn create_url_entry(
+    db_state: &DBState,
+    url: String,
+    edit_code: String,
+    content_hash: &str,
+) -> Result<Json<CreatePostResponse>, ErrorResponse> {
+    db_state
+        .urls
+        .insert_one(
+            Url {
+                edit_code: edit_code.clone(),
+                url: url.clone(),
+                content_hash: content_hash.to_string(),
+            },
+            None,
+        )
+        .await?;
 
     Ok(Json(CreatePostResponse {
         url: Some(url),
@@ -120,23 +133,26 @@ async fn create_url_entry(db_state: &DBState, url: String, edit_code: String, co
     }))
 }
 
-async fn create_paste(State(db_state): State<DBState>, extract::Json(payload): extract::Json<CreatePost>) -> Result<Json<CreatePostResponse>, Error> {
+async fn create_paste(
+    State(db_state): State<DBState>,
+    extract::Json(payload): extract::Json<CreatePost>,
+) -> Result<Json<CreatePostResponse>, ErrorResponse> {
     let hash: String = md5::compute(&payload.content).encode_hex();
     let hash = ensure_doc_entry(&db_state, payload.content, hash).await?;
 
-
     let edit_code = match payload.edit_code {
-        Some(edit_code) if is_valid_edit_code(&edit_code) => {
-            edit_code
-        },
+        Some(edit_code) if is_valid_edit_code(&edit_code) => edit_code,
         Some(_invalid_edit_code) => {
             return Ok(Json(CreatePostResponse {
                 url: None,
                 edit_code: None,
                 success: false,
-                message: Some("Custom edit code must be valid ascii and between 8 and 32 characters long.".to_string()),
+                message: Some(
+                    "Custom edit code must be valid ascii and between 8 and 32 characters long."
+                        .to_string(),
+                ),
             }));
-        },
+        }
         None => {
             nanoid!(16)
         }
@@ -148,11 +164,19 @@ async fn create_paste(State(db_state): State<DBState>, extract::Json(payload): e
                 url: None,
                 edit_code: None,
                 success: false,
-                message: Some("Custom URL must be alphanumeric and at between 8 and 32 characters long.".to_string()),
+                message: Some(
+                    "Custom URL must be alphanumeric and at between 8 and 32 characters long."
+                        .to_string(),
+                ),
             }));
         }
 
-        if db_state.urls.count_documents(doc! {"url": custom_url}, None).await? > 0 {
+        if db_state
+            .urls
+            .count_documents(doc! {"url": custom_url}, None)
+            .await?
+            > 0
+        {
             return Ok(Json(CreatePostResponse {
                 edit_code: None,
                 url: None,
@@ -171,20 +195,27 @@ async fn create_paste(State(db_state): State<DBState>, extract::Json(payload): e
 pub async fn edit_paste(
     State(db_state): State<DBState>,
     extract::Json(edit_request): extract::Json<CreateEdit>,
-) -> Result<Json<CreateEditResponse>, Error> {
-    let url_entry = db_state.urls.find_one(doc! {"url": &edit_request.url}, None).await?;
+) -> Result<Json<CreateEditResponse>, ErrorResponse> {
+    let url_entry = db_state
+        .urls
+        .find_one(doc! {"url": &edit_request.url}, None)
+        .await?;
 
     match url_entry {
         Some(url) => {
             if url.edit_code == edit_request.edit_code {
                 let new_hash: String = md5::compute(&edit_request.content).0.encode_hex();
-                let new_document_hash = ensure_doc_entry(&db_state, edit_request.content, new_hash).await?;
+                let new_document_hash =
+                    ensure_doc_entry(&db_state, edit_request.content, new_hash).await?;
 
-                db_state.urls.update_one(
-                    doc! {"url": &edit_request.url},
-                    doc! {"$set": {"content_hash": new_document_hash}},
-                    None
-                ).await?;
+                db_state
+                    .urls
+                    .update_one(
+                        doc! {"url": &edit_request.url},
+                        doc! {"$set": {"content_hash": new_document_hash}},
+                        None,
+                    )
+                    .await?;
 
                 Ok(Json(CreateEditResponse {
                     success: true,
@@ -196,7 +227,7 @@ pub async fn edit_paste(
                     message: Some("Invalid edit code.".to_string()),
                 }))
             }
-        },
+        }
         None => Ok(Json(CreateEditResponse {
             success: false,
             message: Some("URL not found.".to_string()),
@@ -204,17 +235,21 @@ pub async fn edit_paste(
     }
 }
 
-pub async fn show_paste(
+async fn preview_paste(
     State(db_state): State<DBState>,
     Path(url): Path<String>,
-) -> Result<Html<String>, StatusCode> {
+) -> Result<PreviewTemplate, StatusCode> {
     let url_entry = match db_state.urls.find_one(doc! {"url": &url}, None).await {
         Ok(Some(url_entry)) => url_entry,
         Ok(None) => return Err(StatusCode::NOT_FOUND),
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
 
-    let document = match db_state.docs.find_one(doc! {"hash": &url_entry.content_hash}, None).await {
+    let document = match db_state
+        .docs
+        .find_one(doc! {"hash": &url_entry.content_hash}, None)
+        .await
+    {
         Ok(Some(document)) => document,
         Ok(None) => return Err(StatusCode::NOT_FOUND),
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
@@ -229,8 +264,45 @@ pub async fn show_paste(
     let html_content = ammonia::Builder::default()
         .generic_attributes(["id", "name"].into_iter().collect())
         .clean(&unsafe_html);
-    
-    let full_html = format!(r#"<!DOCTYPE html>
+
+    Ok(PreviewTemplate {
+        title: String::from("Markdown Document"),
+        content: html_content.to_string(),
+    })
+}
+
+pub async fn show_paste(
+    State(db_state): State<DBState>,
+    Path(url): Path<String>,
+) -> Result<Html<String>, StatusCode> {
+    let url_entry = match db_state.urls.find_one(doc! {"url": &url}, None).await {
+        Ok(Some(url_entry)) => url_entry,
+        Ok(None) => return Err(StatusCode::NOT_FOUND),
+        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+    };
+
+    let document = match db_state
+        .docs
+        .find_one(doc! {"hash": &url_entry.content_hash}, None)
+        .await
+    {
+        Ok(Some(document)) => document,
+        Ok(None) => return Err(StatusCode::NOT_FOUND),
+        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+    };
+
+    let options = pulldown_cmark::Options::all();
+    let md_parse = pulldown_cmark::Parser::new_ext(&document.content, options);
+
+    let mut unsafe_html = String::new();
+    pulldown_cmark::html::push_html(&mut unsafe_html, md_parse);
+
+    let html_content = ammonia::Builder::default()
+        .generic_attributes(["id", "name"].into_iter().collect())
+        .clean(&unsafe_html);
+
+    let full_html = format!(
+        r#"<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
@@ -246,7 +318,9 @@ pub async fn show_paste(
         <script>hljs.highlightAll();</script>
     </body>
     
-    </html>"#, html_content);
+    </html>"#,
+        html_content
+    );
 
     Ok(Html(full_html))
 }
@@ -259,17 +333,38 @@ async fn main() {
         .route("/paste", post(create_paste))
         .route("/edit", post(edit_paste));
 
-    let static_files = ServeDir::new("static").append_index_html_on_directories(true);
+    // let static_files = ServeDir::new("static").append_index_html_on_directories(true);
 
     let app = Router::new()
         .nest("/api", api_routes)
-        .nest_service("/", static_files)
-        .route("/p/:id", get(show_paste)) // Make sure this matches your intended URL pattern
-        .fallback(|| async { (StatusCode::NOT_FOUND, "Not Found") })
+        // .nest_service("/", static_files)
+        .route("/", get(index_page))
+        .route("/p/:id", get(preview_paste)) // Make sure this matches your intended URL pattern
+        // .fallback(|| async { (StatusCode::NOT_FOUND, "Not Found") })
+        // .fallback(error)
         .with_state(db_state);
-    
+
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
     axum::serve(listener, app).await.unwrap();
+}
+
+async fn index_page() -> Index {
+    Index {
+        title: String::from("My Site"),
+    }
+}
+
+#[derive(Template, Default)]
+#[template(path = "index.html")]
+struct Index {
+    title: String,
+}
+
+#[derive(Template)]
+#[template(path = "preview.html")]
+struct PreviewTemplate {
+    title: String,
+    content: String,
 }
