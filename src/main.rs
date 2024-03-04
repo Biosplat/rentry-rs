@@ -35,7 +35,7 @@ impl IntoResponse for Error {
     }
 }
 
-pub async fn setup_db() -> DBState {
+async fn setup_db() -> DBState {
     let client_options = ClientOptions::parse("mongodb://mongoadmin:secret@rocky.home.arpa:27017")
         .await
         .expect("unable to connect to database");
@@ -72,7 +72,7 @@ pub async fn setup_db() -> DBState {
     }
 }
 
-pub async fn page(State(db_state): State<DBState>, Path(url): Path<String>) -> (StatusCode, Html<String>) {
+async fn page(State(db_state): State<DBState>, Path(url): Path<String>) -> (StatusCode, Html<String>) {
     if let Some(url) = db_state.urls.find_one(doc! {"url": url}, None).await.expect("failed to search for url") {
         if let Some(doc) = db_state.docs.find_one(doc!{"hash": url.content_hash}, None).await.expect("failed to search for document") {
             let html = markdown::to_html(&doc.content);
@@ -119,8 +119,6 @@ async fn ensure_doc_entry(db_state: &DBState, content: String, hash: String) -> 
 ///
 /// IMPORTANT: This method **DOES NOT** check if the url is valid or not!
 async fn create_url_entry(db_state: &DBState, url: String, edit_code: String, content_hash: &str) -> Result<Json<CreatePostResponse>, Error> {
-    // let edit_code = nanoid!(16);
-
     db_state.urls.insert_one(Url {
         edit_code: edit_code.clone(),
         url: url.clone(),
