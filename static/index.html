@@ -1,29 +1,44 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>rentry-rs</title>
-        <link rel="icon" type="image/ico" href="/favicon.ico">
-        <link rel="stylesheet" href="/style.css">
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js" integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css" integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/markdown/markdown.min.js" integrity="sha512-DmMao0nRIbyDjbaHc8fNd3kxGsZj9PCU6Iu/CeidLQT9Py8nYVA5n0PqXYmvqNdU+lCiTHOM/4E7bM/G8BttJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/gfm/gfm.min.js" integrity="sha512-9gBvOWzR4i5GyhEfJbHXWa0jmCUiT/trH9Q72JbKU2IswWMWKN3Gfzi05IWbsOUzM8Ob+z65I8Ah4EoIQHfkeg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/mode/overlay.min.js" integrity="sha512-SNwKDMYQwymOPjleeZy1xbdlK1PAjJ6EAplvx0CvNFJbW/pF5ec3h0mAdDl1yySq9r3Qont4STM4W3le7FTm9w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/dracula.min.css" integrity="sha512-gFMl3u9d0xt3WR8ZeW05MWm3yZ+ZfgsBVXLSOiFz2xeVrZ8Neg0+V1kkRIo9LikyA/T9HuS91kDfc2XWse0K0A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<head>
+    <title>rentry-rs</title>
+    <link rel="icon" type="image/ico" href="/favicon.ico">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/bootstrap/css/bootstrap.css">
 
-        </head>
-    <body>
-        <!-- <script src="lib/codemirror.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
+        integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
+        integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/markdown/markdown.min.js"
+        integrity="sha512-DmMao0nRIbyDjbaHc8fNd3kxGsZj9PCU6Iu/CeidLQT9Py8nYVA5n0PqXYmvqNdU+lCiTHOM/4E7bM/G8BttJg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/gfm/gfm.min.js"
+        integrity="sha512-9gBvOWzR4i5GyhEfJbHXWa0jmCUiT/trH9Q72JbKU2IswWMWKN3Gfzi05IWbsOUzM8Ob+z65I8Ah4EoIQHfkeg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/mode/overlay.min.js"
+        integrity="sha512-SNwKDMYQwymOPjleeZy1xbdlK1PAjJ6EAplvx0CvNFJbW/pF5ec3h0mAdDl1yySq9r3Qont4STM4W3le7FTm9w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/dracula.min.css"
+        integrity="sha512-gFMl3u9d0xt3WR8ZeW05MWm3yZ+ZfgsBVXLSOiFz2xeVrZ8Neg0+V1kkRIo9LikyA/T9HuS91kDfc2XWse0K0A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+</head>
+
+<body>
+    <!-- <script src="lib/codemirror.js"></script>
         <link rel="stylesheet" href="lib/codemirror.css">
         <script src="mode/javascript/javascript.js"></script> -->
 
-        <textarea id="editor">
+    <textarea id="editor">
 
         </textarea>
 
-        <script>
-            var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+    <script>
+        var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
             mode: {
                 name: "gfm",
                 strikethrough: true,
@@ -44,12 +59,18 @@
             extraKeys: {
                 Home: "goLineLeft",
                 End: "goLineRight",
-                Enter: function(cm) {
+                Enter: function (cm) {
                     cm.replaceSelection("\n");
                 }
             }
         });
-        </script>
+    </script>
+    <button type="button" class="btn btn-outline-primary">Go</button>
+    <button type="submit" id="submitButton" class="btn btn-light squared mr-2 mb-2 float-left"
+        style="min-width: 2.8rem">Go</button>
 
-    </body>
+
+    <script src="/bootstrap/js/bootstrap.js"></script>
+</body>
+
 </html>
