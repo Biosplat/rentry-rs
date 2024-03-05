@@ -1,8 +1,77 @@
-<!-- src/templates/index.html -->
 {% extends "base.html" %}
 
 {% block title %}{{title}}{% endblock %}
 
+{% block head %}
+{% call super() %}
+<style>
+    body {
+        background-color: #2D2D2D;
+        color: #CCCCCC;
+        font-family: 'Arial', sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+    }
+    a, a:hover {
+        text-decoration: none;
+    }
+    .container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px; /* Ensure symmetric padding */
+        background-color: #333;
+        border-radius: 5px;
+        box-sizing: border-box; /* This ensures padding is included in width calculation */
+    }
+    h1 {
+        color: #FFFFFF;
+    }
+    p {
+        margin: 15px 0;
+    }
+    .btn {
+        display: inline-block;
+        background-color: #4A90E2;
+        color: #FFFFFF;
+        padding: 10px 20px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+        text-decoration: none;
+        margin-top: 20px; /* Adjust as needed */
+    }
+    .btn:hover {
+        background-color: #367bc3;
+    }
+    textarea {
+        width: 100%; /* Adjust based on padding and border */
+        height: 300px; /* Adjust height as needed */
+        background-color: #444;
+        color: #CCCCCC;
+        border: 1px solid #555;
+        border-radius: 4px;
+        padding: 10px;
+        margin: 0 auto; /* Adjust bottom margin as needed, remove side margins */
+        font-family: 'Courier New', Courier, monospace;
+        box-sizing: border-box; /* This ensures padding and border are included in the width */
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-{{content}}
+<div class="container">
+    <h1>Welcome to Rentry</h1>
+    <p>Your simple, dark-themed markdown pastebin. Share and store markdown documents with ease.</p>
+    <textarea id="pasteContent" placeholder="Paste your markdown content here..."></textarea>
+    <a href="javascript:void(0);" class="btn" onclick="createPaste()">Create New Paste</a>
+</div>
+<script>
+    function createPaste() {
+        // Placeholder for the actual implementation
+        const content = document.getElementById('pasteContent').value;
+        console.log('Content to create:', content);
+        // Here you will make the POST request to `/api/pastes`
+        // with the content of the textarea.
+    }
+</script>
 {% endblock %}

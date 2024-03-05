@@ -2,6 +2,41 @@
 
 {% block title %}404 Not Found{% endblock %}
 
+{% block head %}
+<style>
+    body {
+        background-color: #2D2D2D;
+        color: #CCCCCC;
+        font-family: 'Arial', sans-serif;
+        line-height: 1.6;
+        padding: 20px;
+        margin: 0;
+    }
+    a {
+        color: #4A90E2;
+        text-decoration: none;
+    }
+    .container {
+        max-width: 600px;
+        margin: auto;
+        text-align: center;
+    }
+    /* Updated code styling */
+    code {
+        background-color: #444; /* Slightly lighter shade for background */
+        border-radius: 3px;
+        color: #e06c75; /* Flat red color for the text */
+        padding: 2px 4px;
+        font-family: Consolas, "Courier New", monospace;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-The address: {{address}} is not valid.
+<div class="container">
+    <h1>Oops!</h1>
+    <p>We can't seem to find the page you're looking for.</p>
+    <p>The address: <code>{{address}}</code> is not valid.</p>
+    <a href="/">Go back home</a>
+</div>
 {% endblock %}

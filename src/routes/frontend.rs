@@ -26,13 +26,11 @@ pub fn static_routes() -> Router {
 #[template(path="index.html")]
 struct IndexTemplate {
     title: String,
-    content: String,
 }
 
 async fn index() -> IndexTemplate {
     IndexTemplate {
         title: String::from("Rentry"),
-        content: String::from("This is the homepage"),
     }
 }
 
