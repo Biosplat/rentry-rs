@@ -237,14 +237,15 @@ where
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocEntry {
     content: String,
-    expiry: Option<DateTime<Utc>>
+    created: DateTime<Utc>,
+    expiry: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DocId([u8; 32]);
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DocId(pub [u8; 32]);
 
 impl From<[u8; 32]> for DocId {
     fn from(value: [u8; 32]) -> Self {
@@ -252,10 +253,82 @@ impl From<[u8; 32]> for DocId {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UrlId(String);
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UrlId(pub String);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UrlEntry {
+    url_id: UrlId,
     doc_id: DocId,
+}
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*; // Adjust this import based on your file structure
+    use tempfile::Builder;
+
+    #[test]
+    fn test_insert_and_get_doc() {
+        let temp_dir = Builder::new().prefix("temp_db").tempdir().unwrap();
+        let db = Database::new(temp_dir.path()).unwrap();
+
+        let doc_id = DocId::from([0; 32]); // Replace with appropriate DocId initialization
+        let doc_entry = DocEntry {
+            content: "Test content".into(),
+            created: Utc::now(),
+            expiry: None, // Set expiry as needed
+        };
+
+        // Insert document
+        assert!(db.insert_doc(&doc_id, &doc_entry).is_ok());
+        
+        // Retrieve document
+        let retrieved = db.get_doc(&doc_id).unwrap();
+        assert_eq!(retrieved, Some(doc_entry));
+    }
+
+    #[test]
+    fn test_remove_doc() {
+        let temp_dir = Builder::new().prefix("temp_db").tempdir().unwrap();
+        let db = Database::new(temp_dir.path()).unwrap();
+
+        let doc_id = DocId::from([1; 32]); // Use a different key for clarity
+        let doc_entry = DocEntry {
+            content: "Content to remove".into(),
+            created: Utc::now(),
+            expiry: None,
+        };
+
+        // Ensure the document is inserted
+        db.insert_doc(&doc_id, &doc_entry).unwrap();
+
+        // Now remove it
+        let removed = db.remove_doc(&doc_id).unwrap();
+        assert_eq!(removed, Some(doc_entry));
+
+        // Verify it's no longer there
+        let retrieved_after_removal = db.get_doc(&doc_id).unwrap();
+        assert!(retrieved_after_removal.is_none());
+    }
+
+    #[test]
+    fn test_insert_and_get_url() {
+        let temp_dir = Builder::new().prefix("temp_db").tempdir().unwrap();
+        let db = Database::new(temp_dir.path()).unwrap();
+        
+        let url_id = UrlId("random_id".to_string()); // Ensure your UrlId can be constructed as shown
+        let doc_id = DocId::from([2; 32]);
+        let url_entry = UrlEntry { doc_id, url_id: url_id.clone() };
+        
+        // Insert URL
+        assert!(db.insert_url(&url_id, &url_entry).is_ok());
+    
+        // Retrieve URL
+        let retrieved = db.get_url(&url_id).unwrap();
+        assert_eq!(retrieved, Some(url_entry));
+    }
 }
