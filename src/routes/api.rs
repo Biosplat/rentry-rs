@@ -18,7 +18,7 @@ use crate::{errors::ApiResponse, state::AppState};
 pub fn api_routes() -> Router {
     Router::new()
         .merge(paste_routes())
-        .route("/markdown/render", post(render_markdown))
+        .route("/markdown/render", post(render_markdown_handler))
 }
 
 /// Constructs a router dedicated to paste management operations.
@@ -33,17 +33,17 @@ pub fn api_routes() -> Router {
 ///   for paste-related operations, ensuring an organized and intuitive API structure.
 pub fn paste_routes() -> Router {
     Router::new()
-        .route("/pastes", post(create_paste))           // post a new paste
-        .route("/pastes/:id", put(edit_paste))          // edit an existing paste
-        .route("/pastes/:id", delete(delete_paste))     // delete an existing paste
-        .route("/pastes/:id", get(get_paste))           // get a specific paste
-        .route("/pastes/:id/html", get(get_paste_html)) // get the html for the specific paste
+        .route("/pastes", post(create_paste_handler))           // post a new paste
+        .route("/pastes/:id", put(edit_paste_handler))          // edit an existing paste
+        .route("/pastes/:id", delete(delete_paste_handler))     // delete an existing paste
+        .route("/pastes/:id", get(get_paste_handler))           // get a specific paste
+        .route("/pastes/:id/html", get(get_paste_html_handler)) // get the html for the specific paste
 }
 
 /// Handles the creation of a new paste, receiving paste details as JSON.
 /// Returns a unique identifier for the newly created paste.
-async fn create_paste(
-    _state: Extension<AppState>, 
+async fn create_paste_handler(
+    _state: Extension<AppState>,
     _request: extract::Json<CreatePaste>
 ) -> ApiResponse<CreatePasteResponse> {
     todo!()
@@ -51,7 +51,7 @@ async fn create_paste(
 
 /// Edits an existing paste identified by a unique ID, updating it with new content provided as JSON.
 /// Returns confirmation of the edit operation.
-async fn edit_paste(
+async fn edit_paste_handler(
     _state: Extension<AppState>,
     _id: extract::Path<String>,
     _request: extract::Json<EditPaste>
@@ -61,7 +61,7 @@ async fn edit_paste(
 
 /// Deletes a specific paste identified by a unique ID.
 /// Returns a confirmation of the deletion operation.
-async fn delete_paste(
+async fn delete_paste_handler(
     _state: Extension<AppState>, 
     _id: extract::Path<String>,
     _request: extract::Json<DeletePaste>
@@ -71,7 +71,7 @@ async fn delete_paste(
 
 /// Retrieves the content of a specific paste by its unique ID.
 /// Returns the paste's content and metadata.
-async fn get_paste(
+async fn get_paste_handler(
     _state: Extension<AppState>,
     _id: extract::Path<String>,
 ) -> ApiResponse<GetPasteResponse> { 
@@ -80,7 +80,7 @@ async fn get_paste(
 
 /// Retrieves the HTML-rendered content of a specific paste by its unique ID.
 /// Useful for displaying formatted paste content in a web interface.
-async fn get_paste_html(
+async fn get_paste_html_handler(
     _state: Extension<AppState>,
     _id: extract::Path<String>,
 ) -> ApiResponse<GetPasteHtmlResponse> {
@@ -89,7 +89,7 @@ async fn get_paste_html(
 
 /// Converts markdown content provided in the request body to HTML.
 /// Returns the rendered HTML content for preview or display purposes.
-async fn render_markdown(
+async fn render_markdown_handler(
     _request: extract::Json<RenderMarkdown>
 ) -> ApiResponse<RenderMarkdownResponse> {
     todo!()

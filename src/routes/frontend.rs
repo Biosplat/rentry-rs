@@ -13,8 +13,8 @@ use tower_http::services::ServeDir;
 pub fn frontend_routes() -> Router {
     Router::new()
         .merge(static_routes())
-        .route("/", get(index))
-        .fallback(not_found)
+        .route("/", get(index_handler))
+        .fallback(not_found_handler)
 }
 
 pub fn static_routes() -> Router {
@@ -28,13 +28,13 @@ struct IndexTemplate {
     title: String,
 }
 
-async fn index() -> IndexTemplate {
+async fn index_handler() -> IndexTemplate {
     IndexTemplate {
         title: String::from("Rentry"),
     }
 }
 
-async fn not_found(uri: Uri) -> NotFoundTemplate {
+async fn not_found_handler(uri: Uri) -> NotFoundTemplate {
     NotFoundTemplate {
         address: uri.to_string(),
     }
