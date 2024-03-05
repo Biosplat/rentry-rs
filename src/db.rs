@@ -239,6 +239,7 @@ where
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocEntry {
+    doc_id: DocId,
     content: String,
     created: DateTime<Utc>,
     expiry: Option<DateTime<Utc>>,
@@ -264,8 +265,6 @@ pub struct UrlEntry {
 
 
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*; // Adjust this import based on your file structure
@@ -280,7 +279,8 @@ mod tests {
         let doc_entry = DocEntry {
             content: "Test content".into(),
             created: Utc::now(),
-            expiry: None, // Set expiry as needed
+            expiry: None,
+            doc_id: doc_id.clone(), // Set expiry as needed
         };
 
         // Insert document
@@ -301,6 +301,7 @@ mod tests {
             content: "Content to remove".into(),
             created: Utc::now(),
             expiry: None,
+            doc_id: doc_id.clone(),
         };
 
         // Ensure the document is inserted
