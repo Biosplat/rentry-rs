@@ -1,8 +1,8 @@
 use axum::{
-    response::Html, routing::{delete, get, post, put}, Extension, Json, Router
+    routing::{delete, get, post, put}, Extension, Router
 };
 
-use crate::{db::DocId, errors::{ApiError, ApiResponse}, state::AppState};
+use crate::state::AppState;
 
 /// Constructs and returns a router with all API endpoints for managing pastes.
 ///
@@ -45,10 +45,7 @@ pub fn paste_routes() -> Router {
 // specific types of requests relevant to paste management and content rendering. Implementations
 // of these handlers should carry out the respective logic, including database interactions,
 // content processing, and response generation, aiming to fulfill the API's intended functionalities gracefully.
-async fn create_paste(_state: Extension<AppState>) -> ApiResponse<String> {
-    _state.db.get_doc(&DocId([0u8; 32]))?;
-    Ok(Json(String::new()))
-}
+async fn create_paste(_state: Extension<AppState>) {}
 
 async fn edit_paste(_state: Extension<AppState>) {}
 
