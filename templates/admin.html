@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block head %}
+{% call super() %}
+
+<style>
+    body {
+        background-color: #2D2D2D;
+        color: #CCCCCC;
+        font-family: 'Arial', sans-serif;
+        line-height: 1.6;
+        padding: 20px;
+        margin: 0;
+    }
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #333;
+        border-radius: 5px;
+    }
+    input, textarea, button {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: 1px solid #555;
+        background-color: #444;
+        color: #CCCCCC;
+        box-sizing: border-box; /* Include padding and border in element's width */
+    }
+    button {
+        cursor: pointer;
+        background-color: #4A90E2;
+        color: #FFFFFF;
+    }
+    button:hover {
+        background-color: #367bc3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Admin Panel</h1>
+    <h2>Create Paste</h2>
+    <textarea id="createContent" placeholder="Paste content"></textarea>
+    <input type="text" id="createSlug" placeholder="Custom slug (optional)">
+    <input type="text" id="createEditCode" placeholder="Edit code (optional)">
+    <button onclick="createPaste()">Create Paste</button>
+
+    <h2>Edit Paste</h2>
+    <input type="text" id="editSlug" placeholder="Slug">
+    <input type="text" id="editEditCode" placeholder="Edit code">
+    <textarea id="editContent" placeholder="New content"></textarea>
+    <button onclick="editPaste()">Edit Paste</button>
+
+    <h2>Delete Paste</h2>
+    <input type="text" id="deleteSlug" placeholder="Slug">
+    <input type="text" id="deleteEditCode" placeholder="Edit code">
+    <button onclick="deletePaste()">Delete Paste</button>
+
+    <h2>Fetch Paste</h2>
+    <input type="text" id="fetchSlug" placeholder="Slug">
+    <button onclick="fetchPaste()">Fetch Paste</button>
+
+    <pre id="responseOutput"></pre>
+</div>
+<script src="/static/apiClient.js"></script>
+<script>
+    const output = document.getElementById('responseOutput');
+
+    async function createPaste() {
+        const content = document.getElementById('createContent').value;
+        let custom_slug = document.getElementById('createSlug').value;
+        let edit_code = document.getElementById('createEditCode').value;
+
+        // Convert empty strings to null for optional fields
+        custom_slug = custom_slug === "" ? null : custom_slug;
+        edit_code = edit_code === "" ? null : edit_code;
+
+        try {
+            const response = await apiClient.createPaste(content, custom_slug, edit_code);
+            output.textContent = JSON.stringify(response, null, 2);
+        } catch (error) {
+            console.error("Failed to create paste:", error);
+            output.textContent = error.toString();
+        }
+    }
+
+    async function editPaste() {
+        const slug = document.getElementById('editSlug').value;
+        let edit_code = document.getElementById('editEditCode').value; // Adjusted to snake_case
+        const content = document.getElementById('editContent').value;
+
+        // Convert empty string to null for optional fields
+        edit_code = edit_code === "" ? null : edit_code;
+
+        try {
+            const response = await apiClient.editPaste(slug, edit_code, content);
+            output.textContent = JSON.stringify(response, null, 2);
+        } catch (error) {
+            console.error("Failed to edit paste:", error);
+            output.textContent = error.toString();
+        }
+    }
+
+    async function deletePaste() {
+        const slug = document.getElementById('deleteSlug').value;
+        const edit_code = document.getElementById('deleteEditCode').value;
+
+        try {
+            const response = await apiClient.deletePaste(slug, edit_code);
+            output.textContent = "Paste deleted successfully";
+        } catch (error) {
+            console.error("Failed to delete paste:", error);
+            output.textContent = error.toString();
+        }
+    }
+
+    async function fetchPaste() {
+        const slug = document.getElementById('fetchSlug').value;
+        try {
+            const response = await apiClient.fetchPaste(slug);
+            output.textContent = JSON.stringify(response, null, 2);
+        } catch (error) {
+            console.error("Failed to fetch paste:", error);
+            output.textContent = error.toString();
+        }
+    }
+</script>
+
+{% endblock %}

@@ -14,6 +14,8 @@ mod services;
 #[tokio::main]
 async fn main() {
 
+    env_logger::init();
+
     let app_state = AppState::new("./database");
     let app_routes = configure_routes()
         .layer(Extension(app_state));

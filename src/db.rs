@@ -8,7 +8,7 @@ use crate::errors::Error;
 pub struct Database {
     db: sled::Db,
 
-    slugs: sled::Tree, // stores all urls
+    slugs: sled::Tree,     // stores all urls
     documents: sled::Tree, // stores all docs
 }
 
@@ -53,7 +53,11 @@ impl Database {
         Self::contains_key(&self.documents, hash)
     }
 
-    pub fn insert_slug<S: AsRef<str>>(&self, slug: S, record: &SlugRecord) -> Result<Option<SlugRecord>, Error> {
+    pub fn insert_slug<S: AsRef<str>>(
+        &self,
+        slug: S,
+        record: &SlugRecord,
+    ) -> Result<Option<SlugRecord>, Error> {
         Self::insert_and_transform(&self.slugs, slug.as_ref(), record)
     }
 
@@ -66,13 +70,28 @@ impl Database {
     }
 
     pub fn contains_slug<S: AsRef<str>>(&self, slug: S) -> Result<bool, Error> {
-        Self::contains_key(&self.slugs, slug.as_ref())       
+        Self::contains_key(&self.slugs, slug.as_ref())
+    }
+
+    fn iter<K, V>(store: &sled::Tree) -> impl Iterator<Item = Result<(K, V), Error>>
+    where
+        K: FromIVec,
+        V: FromIVec,
+    {
+        store.iter().map(|result| match result {
+            Ok((k, v)) => {
+                let k = K::from_ivec(&k)?;
+                let v = V::from_ivec(&v)?;
+                Ok::<_, Error>((k, v))
+            }
+            Err(e) => Err(e.into()),
+        })
     }
 
     fn insert_and_transform<K, V, T>(
         store: &sled::Tree,
         key: K,
-        value: V
+        value: V,
     ) -> Result<Option<T>, Error>
     where
         K: IntoIVec,
@@ -82,34 +101,33 @@ impl Database {
         let previous = store.insert(key.to_ivec()?, value.to_ivec()?)?;
         Ok(previous.map(|p| T::from_ivec(&p)).transpose()?)
     }
-    
-    fn get_and_transform<K, V>(
-        store: &sled::Tree,
-        key: K
-    ) -> Result<Option<V>, Error>
+
+    fn get_and_transform<K, V>(store: &sled::Tree, key: K) -> Result<Option<V>, Error>
     where
         K: IntoIVec,
-        V: FromIVec
+        V: FromIVec,
     {
         let value = store.get(key.to_ivec()?)?;
         Ok(value.map(|p| FromIVec::from_ivec(&p)).transpose()?)
     }
 
-    fn remove<K, V>(
-        store: &sled::Tree, 
-        key: K
-    ) -> Result<Option<V>, Error>
+    fn remove<K, V>(store: &sled::Tree, key: K) -> Result<Option<V>, Error>
     where
         K: IntoIVec,
-        V: FromIVec
+        V: FromIVec,
     {
-        Ok(store.remove(key.to_ivec()?)?.map(|p| FromIVec::from_ivec(&p)).transpose()?)
+        Ok(store
+            .remove(key.to_ivec()?)?
+            .map(|p| FromIVec::from_ivec(&p))
+            .transpose()?)
     }
 
-    fn contains_key<K>(store: &sled::Tree, key: K) -> Result<bool, Error> where K: IntoIVec {
+    fn contains_key<K>(store: &sled::Tree, key: K) -> Result<bool, Error>
+    where
+        K: IntoIVec,
+    {
         store.contains_key(key.to_ivec()?).map_err(Into::into)
     }
-
 }
 
 pub trait IntoIVec: Sized {
@@ -120,13 +138,19 @@ pub trait FromIVec: Sized {
     fn from_ivec(ivec: &IVec) -> Result<Self, bincode::Error>;
 }
 
-impl<T> IntoIVec for T where T: Serialize {
+impl<T> IntoIVec for T
+where
+    T: Serialize,
+{
     fn to_ivec(&self) -> Result<IVec, bincode::Error> {
         bincode::serialize(self).map(Into::into)
     }
 }
 
-impl<T> FromIVec for T where T: for<'de> Deserialize<'de> {
+impl<T> FromIVec for T
+where
+    T: for<'de> Deserialize<'de>,
+{
     fn from_ivec(ivec: &IVec) -> Result<Self, bincode::Error> {
         bincode::deserialize(ivec)
     }

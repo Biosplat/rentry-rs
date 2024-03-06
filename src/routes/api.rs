@@ -13,10 +13,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
     db::{Database, DocumentHash, DocumentRecord, SlugRecord},
     errors::Error,
-    services::{create_paste, edit_paste},
+    services::{create_paste, markdown_to_html},
     state::AppState,
     validators::{is_invalid_document, is_invalid_edit_code, is_invalid_slug},
 };
+
+use super::frontend::MarkdownPreview;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonError {
@@ -127,18 +129,6 @@ pub fn check_slug_access(
             "You do not have permission to edit this document".into(),
         ))
     }
-
-    // match db.get_slug(slug)? {
-    //     Some(slug_record) if slug_record.edit_code == edit_code => Ok(()),
-    //     Some(_) => Err(JsonErrorResponse(
-    //         StatusCode::FORBIDDEN,
-    //         "You do not have permission to edit this document".into(),
-    //     )),
-    //     None => Err(JsonErrorResponse(
-    //         StatusCode::NOT_FOUND,
-    //         "the requested slug was not found".into(),
-    //     )),
-    // }
 }
 
 pub fn check_slug_exists(db: &Database, slug: &str) -> Result<SlugRecord, JsonErrorResponse> {
@@ -190,17 +180,6 @@ async fn create_paste_handler(
     let slug = request.custom_slug.clone().unwrap_or(nanoid!(8));
     let edit_code = request.edit_code.clone().unwrap_or(nanoid!(16));
 
-    // match create_paste(&state.db, &slug, &edit_code, &request.content) {
-    //     Ok(_) => Ok(Json(CreatePasteResponse { slug, edit_code })),
-    //     Err(e) => {
-    //         error!("Internal server error: {e}");
-
-    //         Err(JsonErrorResponse(
-    //             StatusCode::INTERNAL_SERVER_ERROR,
-    //             "internal server error".into(),
-    //         ))
-    //     }
-    // }
     create_paste(&state.db, &slug, &edit_code, &request.content)?;
     Ok(Json(CreatePasteResponse { slug, edit_code }))
 }
@@ -215,50 +194,8 @@ async fn edit_paste_handler(
     let slug = slug.as_str();
     check_slug_access(&state.db, slug, &request.edit_code)?;
 
-    // match edit_paste(&state.db, slug, &request.edit_code, &request.content) {
-    //     Ok(_) => Ok(Json(EditPasteResponse {})),
-    //     Err(e) => {
-    //         error!("Internal server error: {e}");
-
-    //         Err(JsonErrorResponse(
-    //             StatusCode::INTERNAL_SERVER_ERROR,
-    //             "internal server error".into(),
-    //         ))
-    //     }
-    // }
-
-    edit_paste(&state.db, slug, &request.edit_code, &request.content)?;
+    create_paste(&state.db, slug, &request.edit_code, &request.content)?;
     Ok(Json(EditPasteResponse {}))
-
-    // match state.db.get_slug(slug) {
-    //     Ok(Some(slug_record)) if slug_record.edit_code == request.edit_code => {
-    //         match edit_paste(&state.db, slug, &slug_record.edit_code, &request.content) {
-    //             Ok(_) => Ok(Json(EditPasteResponse {})),
-    //             Err(e) => {
-    //                 error!("Internal server error: {e}");
-    //                 Err(JsonErrorResponse(
-    //                     StatusCode::INTERNAL_SERVER_ERROR,
-    //                     "internal server error".into(),
-    //                 ))
-    //             }
-    //         }
-    //     }
-    //     Ok(Some(_)) => Err(JsonErrorResponse(
-    //         StatusCode::FORBIDDEN,
-    //         "You do not have permission to edit this document".into(),
-    //     )),
-    //     Ok(None) => Err(JsonErrorResponse(
-    //         StatusCode::NOT_FOUND,
-    //         "the requested slug was not found".into(),
-    //     )),
-    //     Err(e) => {
-    //         error!("Internal server error: {e}");
-    //         Err(JsonErrorResponse(
-    //             StatusCode::INTERNAL_SERVER_ERROR,
-    //             "internal server error".into(),
-    //         ))
-    //     }
-    // }
 }
 
 /// Deletes a specific paste identified by a unique ID.
@@ -294,8 +231,19 @@ async fn get_paste_handler(
 
 /// Retrieves the HTML-rendered content of a specific paste by its unique ID.
 /// Useful for displaying formatted paste content in a web interface.
-async fn get_paste_html_handler(_state: Extension<AppState>, _id: extract::Path<String>) {
-    todo!()
+async fn get_paste_html_handler(
+    state: Extension<AppState>,
+    slug: extract::Path<String>,
+) -> Result<Json<GetPasteHtmlResponse>, JsonErrorResponse> {
+    let slug = slug.as_str();
+
+    let slug_record = check_slug_exists(&state.db, slug)?;
+    let doc_record = check_document_exists(&state.db, &slug_record.document_hash)?;
+
+    let html = markdown_to_html(&doc_record.content);
+
+    Ok(Json(GetPasteHtmlResponse { html }))
+    // Ok(MarkdownPreview { title: String::from("Markdown Document"), content: html })
 }
 
 /// Converts markdown content provided in the request body to HTML.
@@ -357,6 +305,7 @@ pub struct GetPasteResponse {
 /// Represents the response structure containing the HTML-rendered content of a requested paste.
 #[derive(Debug, Serialize)]
 pub struct GetPasteHtmlResponse {
+    html: String,
     // Fields to be determined
 }
 

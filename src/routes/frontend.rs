@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{http::Uri, routing::{get, get_service}, Router};
+use axum::{extract, http::Uri, routing::{get, get_service}, Router};
 use tower_http::services::ServeDir;
 
 /// Creates and returns a router for frontend-related routes.
@@ -14,6 +14,8 @@ pub fn frontend_routes() -> Router {
     Router::new()
         .merge(static_routes())
         .route("/", get(index_handler))
+        .route("/admin", get(admin_handler))
+        .route("/p/:slug", get(paste_handler))
         .fallback(not_found_handler)
 }
 
@@ -44,4 +46,23 @@ async fn not_found_handler(uri: Uri) -> NotFoundTemplate {
 #[template(path="404.html")]
 struct NotFoundTemplate {
     address: String,
+}
+
+#[derive(Template)]
+#[template(path="admin.html")]
+struct AdminTemplate {}
+
+async fn admin_handler() -> AdminTemplate {
+    AdminTemplate {}
+}
+
+
+#[derive(Template)]
+#[template(path="preview.html")]
+pub struct MarkdownPreview {
+    slug: String,
+}
+
+async fn paste_handler(slug: extract::Path<String>) -> MarkdownPreview {
+    MarkdownPreview { slug: slug.0 }
 }

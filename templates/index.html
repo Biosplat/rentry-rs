@@ -66,12 +66,24 @@
     <a href="javascript:void(0);" class="btn" onclick="createPaste()">Create New Paste</a>
 </div>
 <script>
-    function createPaste() {
+    async function createPaste() {
         // Placeholder for the actual implementation
         const content = document.getElementById('pasteContent').value;
         console.log('Content to create:', content);
         // Here you will make the POST request to `/api/pastes`
         // with the content of the textarea.
+        
+        let response = await fetch('/api/pastes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content: content
+            })
+        });
+
+        console.log(await response.json())
     }
 </script>
 {% endblock %}
