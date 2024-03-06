@@ -8,9 +8,8 @@ use crate::errors::Error;
 pub struct Database {
     db: sled::Db,
 
-    urls: sled::Tree, // stores all urls
-    docs: sled::Tree, // stores all docs
-    // html: sled::Tree, // stores cached html for docs
+    slugs: sled::Tree, // stores all urls
+    documents: sled::Tree, // stores all docs
 }
 
 impl Database {
@@ -21,78 +20,56 @@ impl Database {
             .path(path)
             .open()?;
 
-        let urls = db.open_tree("urls")?;
-        let docs = db.open_tree("docs")?;
-        // TODO: maybe add html caching for when converting the markdown documents into html
-        // let html = db.open_tree("html")?;
+        let slugs = db.open_tree("slugs")?;
+        let documents = db.open_tree("documents")?;
 
         Ok(Self {
             db,
-            urls,
-            docs,
-            // html
+            slugs,
+            documents,
         })
     }
 
-    pub fn insert_doc(&self, key: &DocId, doc: &DocEntry) -> Result<Option<DocEntry>, Error> {
-        Self::insert_and_transform(&self.docs, key, doc)
+    pub fn insert_document(&self, doc: &DocumentRecord) -> Result<DocumentHash, Error> {
+        let hash = *blake3::hash(&doc.content.as_bytes()).as_bytes();
+        let hash = DocumentHash(hash);
+        Self::insert_and_transform::<_, _, DocumentRecord>(&self.documents, &hash, doc)?;
+        Ok(hash)
     }
 
-    pub fn get_doc(&self, key: &DocId) -> Result<Option<DocEntry>, Error> {
-        Self::get_and_transform(&self.docs, key)
+    // pub fn insert_document(&self, hash: &DocumentHash, doc: &DocumentRecord) -> Result<Option<DocumentRecord>, Error> {
+    //     Self::insert_and_transform(&self.documents, hash, doc)
+    // }
+
+    pub fn get_document(&self, hash: &DocumentHash) -> Result<Option<DocumentRecord>, Error> {
+        Self::get_and_transform(&self.documents, hash)
     }
 
-    pub fn remove_doc(&self, key: &DocId) -> Result<Option<DocEntry>, Error> {
-        Self::remove(&self.docs, key)
+    pub fn remove_document(&self, hash: &DocumentHash) -> Result<Option<DocumentRecord>, Error> {
+        Self::remove(&self.documents, hash)
     }
 
-    pub fn insert_url(&self, key: &String, url: &UrlEntry) -> Result<Option<UrlEntry>, Error> {
-        Self::insert_and_transform(&self.urls, key, url)
+    pub fn contains_document(&self, hash: &DocumentHash) -> Result<bool, Error> {
+        Self::contains_key(&self.documents, hash)
     }
 
-    pub fn get_url(&self, key: &String) -> Result<Option<UrlEntry>, Error> {
-        Self::get_and_transform(&self.urls, key)
+    pub fn insert_slug<S: AsRef<str>>(&self, slug: S, record: &SlugRecord) -> Result<Option<SlugRecord>, Error> {
+        Self::insert_and_transform(&self.slugs, slug.as_ref(), record)
     }
 
-    pub fn remove_url(&self, key: &String) -> Result<Option<UrlEntry>, Error> {
-        Self::remove(&self.urls, key)
+    pub fn get_slug<S: AsRef<str>>(&self, slug: S) -> Result<Option<SlugRecord>, Error> {
+        Self::get_and_transform(&self.slugs, slug.as_ref())
     }
 
-    pub fn contains_url(&self, url: &String) -> Result<bool, Error> {
-        self.urls.contains_key(url).map_err(Into::into)
+    pub fn remove_slug<S: AsRef<str>>(&self, slug: S) -> Result<Option<SlugRecord>, Error> {
+        Self::remove(&self.slugs, slug.as_ref())
     }
 
-    /// Inserts a key-value pair into the specified sled `Tree`, potentially replacing the previous value
-    /// associated with the same key. If a previous value exists, it attempts to transform it into the
-    /// specified type `T` using the `FromIVec` trait.
-    ///
-    /// # Parameters
-    ///
-    /// - `store`: Reference to the sled `Tree` where the key-value pair will be inserted.
-    /// - `key`: The key for the insertion. Must implement `IntoIVec` to allow conversion into `IVec`,
-    ///   which is the key format used by sled.
-    /// - `value`: The value to insert. Must also implement `IntoIVec` to be converted into `IVec`
-    ///   for storage in the sled database.
-    ///
-    /// # Type Parameters
-    ///
-    /// - `K`: The type of the key. Must implement the `IntoIVec` trait.
-    /// - `V`: The type of the value to be inserted. Must implement the `IntoIVec` trait.
-    /// - `T`: The type into which the previous value (if any) will be transformed. Must implement
-    ///   the `FromIVec` trait.
-    ///
-    /// # Returns
-    ///
-    /// - `Ok(Some(T))` if a previous value was present and successfully transformed into type `T`.
-    /// - `Ok(None)` if no previous value was present.
-    /// - `Err(Error)` if an error occurs during the insertion, serialization, deserialization,
-    ///   or transformation process.
-    ///
-    /// # Errors
-    ///
-    /// This function can return an error if the key or value serialization fails, if the sled operation
-    /// itself fails (e.g., due to IO issues), or if transforming the previous value into type `T` fails.
-    pub fn insert_and_transform<K, V, T>(
+    pub fn contains_slug<S: AsRef<str>>(&self, slug: S) -> Result<bool, Error> {
+        Self::contains_key(&self.slugs, slug.as_ref())       
+    }
+
+    fn insert_and_transform<K, V, T>(
         store: &sled::Tree,
         key: K,
         value: V
@@ -106,33 +83,7 @@ impl Database {
         Ok(previous.map(|p| T::from_ivec(&p)).transpose()?)
     }
     
-    /// Retrieves the value associated with the specified key from the sled `Tree` and attempts to
-    /// transform it into the specified type `V` using the `FromIVec` trait.
-    ///
-    /// # Parameters
-    ///
-    /// - `store`: Reference to the sled `Tree` from which the value will be retrieved.
-    /// - `key`: The key whose associated value is to be retrieved. Must implement `IntoIVec` to
-    ///   allow conversion into `IVec`, which is the key format used by sled.
-    ///
-    /// # Type Parameters
-    ///
-    /// - `K`: The type of the key. Must implement the `IntoIVec` trait.
-    /// - `V`: The type into which the retrieved value will be transformed. Must implement
-    ///   the `FromIVec` trait.
-    ///
-    /// # Returns
-    ///
-    /// - `Ok(Some(V))` if a value was present for the key and successfully transformed into type `V`.
-    /// - `Ok(None)` if no value was present for the key.
-    /// - `Err(Error)` if an error occurs during the retrieval, deserialization,
-    ///   or transformation process.
-    ///
-    /// # Errors
-    ///
-    /// This function can return an error if the key serialization fails, if the sled operation itself
-    /// fails (e.g., due to IO issues), or if transforming the retrieved value into type `V` fails.
-    pub fn get_and_transform<K, V>(
+    fn get_and_transform<K, V>(
         store: &sled::Tree,
         key: K
     ) -> Result<Option<V>, Error>
@@ -144,27 +95,7 @@ impl Database {
         Ok(value.map(|p| FromIVec::from_ivec(&p)).transpose()?)
     }
 
-    /// Removes an entry from a sled `Tree` by its key and returns the removed value, if any.
-    ///
-    /// # Parameters
-    /// - `store`: A reference to the sled `Tree`.
-    /// - `key`: The key of the entry to remove. Must be convertible to `IVec`.
-    ///
-    /// # Type Parameters
-    /// - `K`: Type of the key, must implement `IntoIVec`.
-    /// - `V`: Type of the value to return, must implement `FromIVec`.
-    ///
-    /// # Returns
-    /// - `Ok(Some(V))` if an entry was found and removed, converted to type `V`.
-    /// - `Ok(None)` if no entry was found for the key.
-    /// - `Err(Error)` on failure, such as serialization issues.
-    ///
-    /// # Example
-    /// ```no_run
-    /// // Assuming `store` is a sled::Tree, `key` is the key to remove
-    /// let result = remove_entry(&store, key);
-    /// ```
-    pub fn remove<K, V>(
+    fn remove<K, V>(
         store: &sled::Tree, 
         key: K
     ) -> Result<Option<V>, Error>
@@ -175,165 +106,49 @@ impl Database {
         Ok(store.remove(key.to_ivec()?)?.map(|p| FromIVec::from_ivec(&p)).transpose()?)
     }
 
+    fn contains_key<K>(store: &sled::Tree, key: K) -> Result<bool, Error> where K: IntoIVec {
+        store.contains_key(key.to_ivec()?).map_err(Into::into)
+    }
+
 }
 
-/// A trait for converting a value into an `IVec`, the byte vector type used by sled.
-/// 
-/// This trait facilitates serialization of types that implement `Serialize` into `IVec`,
-/// making it easier to store them in a sled database.
 pub trait IntoIVec: Sized {
-    /// Converts the implementing type into an `IVec`.
-    ///
-    /// # Returns
-    /// 
-    /// A `Result` wrapping an `IVec` on success, or a `bincode::Error` if serialization fails.
     fn to_ivec(&self) -> Result<IVec, bincode::Error>;
 }
 
-/// A trait for converting an `IVec` back into a value.
-/// 
-/// This trait is used for deserializing data stored as `IVec` in a sled database back
-/// into its original type, provided it implements `Deserialize`.
 pub trait FromIVec: Sized {
-    /// Converts an `IVec` back into the implementing type.
-    ///
-    /// # Parameters
-    /// 
-    /// * `ivec`: A reference to the `IVec` to be deserialized.
-    ///
-    /// # Returns
-    /// 
-    /// A `Result` wrapping the deserialized value on success, or a `bincode::Error` if deserialization fails.
     fn from_ivec(ivec: &IVec) -> Result<Self, bincode::Error>;
 }
 
-impl<T> IntoIVec for T
-where
-    T: Serialize,
-{
-    /// Implements the conversion of a value that implements `Serialize` into an `IVec`.
-    /// This is done by serializing the value using `bincode`.
-    ///
-    /// # Returns
-    /// 
-    /// A `Result` wrapping an `IVec` on success, or a `bincode::Error` if serialization fails.
+impl<T> IntoIVec for T where T: Serialize {
     fn to_ivec(&self) -> Result<IVec, bincode::Error> {
         bincode::serialize(self).map(Into::into)
     }
 }
 
-impl<T> FromIVec for T
-where
-    T: for<'de> Deserialize<'de>,
-{
-    /// Implements the conversion of an `IVec` back into a value that implements `Deserialize`.
-    /// This is done by deserializing the `IVec` using `bincode`.
-    ///
-    /// # Parameters
-    /// 
-    /// * `ivec`: A reference to the `IVec` to be deserialized.
-    ///
-    /// # Returns
-    /// 
-    /// A `Result` wrapping the deserialized value on success, or a `bincode::Error` if deserialization fails.
+impl<T> FromIVec for T where T: for<'de> Deserialize<'de> {
     fn from_ivec(ivec: &IVec) -> Result<Self, bincode::Error> {
         bincode::deserialize(ivec)
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DocumentHash([u8; 32]);
+
+impl AsRef<[u8; 32]> for DocumentHash {
+    fn as_ref(&self) -> &[u8; 32] {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DocEntry {
-    pub doc_id: DocId,
+pub struct DocumentRecord {
     pub content: String,
     pub created: DateTime<Utc>,
 }
 
-// #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-// pub struct DocId(pub [u8; 32]);
-
-// impl From<[u8; 32]> for DocId {
-//     fn from(value: [u8; 32]) -> Self {
-//         Self(value)
-//     }
-// }
-
-// #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-// pub struct String(pub String);
-
-type DocId = [u8; 32];
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct UrlEntry {
-    pub url_id: String,
-    pub doc_id: DocId,
+pub struct SlugRecord {
+    pub document_hash: DocumentHash,
     pub edit_code: String,
-}
-
-
-
-#[cfg(test)]
-mod tests {
-    use super::*; // Adjust this import based on your file structure
-    use tempfile::Builder;
-
-    #[test]
-    fn test_insert_and_get_doc() {
-        let temp_dir = Builder::new().prefix("temp_db").tempdir().unwrap();
-        let db = Database::new(temp_dir.path()).unwrap();
-
-        let doc_id = DocId::from([0; 32]); // Replace with appropriate DocId initialization
-        let doc_entry = DocEntry {
-            content: "Test content".into(),
-            created: Utc::now(),
-            doc_id: doc_id.clone(), // Set expiry as needed
-        };
-
-        // Insert document
-        assert!(db.insert_doc(&doc_id, &doc_entry).is_ok());
-        
-        // Retrieve document
-        let retrieved = db.get_doc(&doc_id).unwrap();
-        assert_eq!(retrieved, Some(doc_entry));
-    }
-
-    #[test]
-    fn test_remove_doc() {
-        let temp_dir = Builder::new().prefix("temp_db").tempdir().unwrap();
-        let db = Database::new(temp_dir.path()).unwrap();
-
-        let doc_id = DocId::from([1; 32]); // Use a different key for clarity
-        let doc_entry = DocEntry {
-            content: "Content to remove".into(),
-            created: Utc::now(),
-            doc_id: doc_id.clone(),
-        };
-
-        // Ensure the document is inserted
-        db.insert_doc(&doc_id, &doc_entry).unwrap();
-
-        // Now remove it
-        let removed = db.remove_doc(&doc_id).unwrap();
-        assert_eq!(removed, Some(doc_entry));
-
-        // Verify it's no longer there
-        let retrieved_after_removal = db.get_doc(&doc_id).unwrap();
-        assert!(retrieved_after_removal.is_none());
-    }
-
-    #[test]
-    fn test_insert_and_get_url() {
-        let temp_dir = Builder::new().prefix("temp_db").tempdir().unwrap();
-        let db = Database::new(temp_dir.path()).unwrap();
-        
-        let url_id = "random_id".to_string(); // Ensure your UrlId can be constructed as shown
-        let doc_id = DocId::from([2; 32]);
-        let url_entry = UrlEntry { doc_id, url_id: url_id.clone(), edit_code: String::new() };
-        
-        // Insert URL
-        assert!(db.insert_url(&url_id, &url_entry).is_ok());
-    
-        // Retrieve URL
-        let retrieved = db.get_url(&url_id).unwrap();
-        assert_eq!(retrieved, Some(url_entry));
-    }
 }
