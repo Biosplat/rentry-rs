@@ -1,0 +1,128 @@
+/* General body styling for dark theme */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #E0E0E0; /* Lighter text color for dark backgrounds */
+    background-color: #121212; /* Dark background */
+    padding: 20px;
+    max-width: 800px; /* Adjust this value to control the content width */
+    margin: auto;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    line-height: 1.2;
+    color: #BB86FC; /* Light purple for headings to add some color */
+}
+
+h1 {
+    font-size: 2.5em;
+}
+
+h2 {
+    font-size: 2em;
+}
+
+h3 {
+    font-size: 1.75em;
+}
+
+h4 {
+    font-size: 1.5em;
+}
+
+h5 {
+    font-size: 1.25em;
+}
+
+h6 {
+    font-size: 1em;
+}
+
+/* Paragraphs */
+p {
+    margin-bottom: 10px;
+}
+
+/* Links */
+a {
+    color: #60adff; /* Teal color for links */
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Lists */
+ul, ol {
+    margin-bottom: 20px;
+    padding-left: 20px;
+}
+
+/* Blockquotes */
+blockquote {
+    margin: 20px 0;
+    padding: 10px 20px;
+    background-color: #222222; /* Darker background for contrast */
+    border-left: 5px solid #BB86FC; /* Light purple left border */
+    color: #E0E0E0; /* Lighter text color */
+}
+
+/* Code blocks */
+pre {
+    background-color: #222222; /* Slightly lighter dark background for contrast */
+    border: 1px solid #444444; /* Dark border */
+    padding: 10px;
+    margin-bottom: 20px;
+    overflow: auto;
+    font-family: 'Courier New', Courier, monospace;
+    border-radius: 4px;
+}
+
+/* Inline code */
+code {
+    background-color: #222222; /* Matching pre background */
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #E0E0E0; /* Matching pre text color */
+}
+
+/* Images */
+img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+    border-top: 3px solid #333333; /* Darker line above column headers */
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #444444; /* Darker lines for row separators */
+    color: #E0E0E0; /* Lighter text color */
+}
+
+th {
+    font-weight: bold;
+    background-color: transparent; /* No background color for headers */
+}
+
+/* Thematic break / horizontal rule */
+hr {
+    border: 0;
+    height: 1px;
+    background-color: #444444;
+    /* background-image: linear-gradient(to right, #333333, #BB86FC, #333333); */
+    margin: 20px 0;
+}
