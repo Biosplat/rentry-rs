@@ -98,18 +98,24 @@ async fn render_markdown_handler(
 /// Represents the input structure for creating a new paste.
 #[derive(Debug, Deserialize)]
 pub struct CreatePaste {
-    // Fields to be determined
+    pub custom_url: Option<String>,
+    pub edit_code: Option<String>,
+    pub content: String,
 }
 
 /// Represents the response structure for creating a new paste.
 #[derive(Debug, Serialize)]
 pub struct CreatePasteResponse {
     // Fields to be determined
+    id: String
 }
 
 /// Represents the input structure for editing an existing paste.
 #[derive(Debug, Deserialize)]
 pub struct EditPaste {
+    pub url: String,
+    pub edit_code: String,
+    pub content: String,
     // Fields to be determined
 }
 

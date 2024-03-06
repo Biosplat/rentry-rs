@@ -46,16 +46,20 @@ impl Database {
         Self::remove(&self.docs, key)
     }
 
-    pub fn insert_url(&self, key: &UrlId, url: &UrlEntry) -> Result<Option<UrlEntry>, Error> {
+    pub fn insert_url(&self, key: &String, url: &UrlEntry) -> Result<Option<UrlEntry>, Error> {
         Self::insert_and_transform(&self.urls, key, url)
     }
 
-    pub fn get_url(&self, key: &UrlId) -> Result<Option<UrlEntry>, Error> {
+    pub fn get_url(&self, key: &String) -> Result<Option<UrlEntry>, Error> {
         Self::get_and_transform(&self.urls, key)
     }
 
-    pub fn remove_url(&self, key: &UrlId) -> Result<Option<UrlEntry>, Error> {
+    pub fn remove_url(&self, key: &String) -> Result<Option<UrlEntry>, Error> {
         Self::remove(&self.urls, key)
+    }
+
+    pub fn contains_url(&self, url: &String) -> Result<bool, Error> {
+        self.urls.contains_key(url).map_err(Into::into)
     }
 
     /// Inserts a key-value pair into the specified sled `Tree`, potentially replacing the previous value
@@ -239,28 +243,30 @@ where
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocEntry {
-    doc_id: DocId,
-    content: String,
-    created: DateTime<Utc>,
-    expiry: Option<DateTime<Utc>>,
+    pub doc_id: DocId,
+    pub content: String,
+    pub created: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DocId(pub [u8; 32]);
+// #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// pub struct DocId(pub [u8; 32]);
 
-impl From<[u8; 32]> for DocId {
-    fn from(value: [u8; 32]) -> Self {
-        Self(value)
-    }
-}
+// impl From<[u8; 32]> for DocId {
+//     fn from(value: [u8; 32]) -> Self {
+//         Self(value)
+//     }
+// }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct UrlId(pub String);
+// #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// pub struct String(pub String);
+
+type DocId = [u8; 32];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UrlEntry {
-    url_id: UrlId,
-    doc_id: DocId,
+    pub url_id: String,
+    pub doc_id: DocId,
+    pub edit_code: String,
 }
 
 
@@ -279,7 +285,6 @@ mod tests {
         let doc_entry = DocEntry {
             content: "Test content".into(),
             created: Utc::now(),
-            expiry: None,
             doc_id: doc_id.clone(), // Set expiry as needed
         };
 
@@ -300,7 +305,6 @@ mod tests {
         let doc_entry = DocEntry {
             content: "Content to remove".into(),
             created: Utc::now(),
-            expiry: None,
             doc_id: doc_id.clone(),
         };
 
@@ -321,9 +325,9 @@ mod tests {
         let temp_dir = Builder::new().prefix("temp_db").tempdir().unwrap();
         let db = Database::new(temp_dir.path()).unwrap();
         
-        let url_id = UrlId("random_id".to_string()); // Ensure your UrlId can be constructed as shown
+        let url_id = "random_id".to_string(); // Ensure your UrlId can be constructed as shown
         let doc_id = DocId::from([2; 32]);
-        let url_entry = UrlEntry { doc_id, url_id: url_id.clone() };
+        let url_entry = UrlEntry { doc_id, url_id: url_id.clone(), edit_code: String::new() };
         
         // Insert URL
         assert!(db.insert_url(&url_id, &url_entry).is_ok());

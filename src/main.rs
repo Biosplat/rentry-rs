@@ -8,6 +8,8 @@ mod db;
 mod errors;
 mod routes;
 mod state;
+mod validators;
+mod services;
 
 #[tokio::main]
 async fn main() {

@@ -3,6 +3,15 @@ use axum::{http::StatusCode, Json};
 use serde::Serialize;
 use thiserror::Error;
 
+/*
+
+make function to check for exisiting url, 
+
+call that from the route (return error from this)
+
+remove auto conversion from error to api error. 
+
+*/
 
 /// A custom error enum to encapsulate various errors that can occur within the application.
 ///
@@ -16,7 +25,7 @@ pub enum Error {
     Sled(#[from] sled::Error),
 
     #[error("Bincode Error: {0}")]
-    Bincode(#[from] bincode::Error)
+    Bincode(#[from] bincode::Error),
 }
 
 /// An enumeration to classify types of API errors.
@@ -30,6 +39,10 @@ pub enum Error {
 #[derive(Debug, Clone, Copy, Serialize)]
 pub enum ApiErrorType {
     Backend,
+    InvalidUrl,
+    UrlTaken,
+    InvalidEditCode,
+    InvalidDocSize
 }
 
 /// Implements a conversion from `ApiErrorType` to `StatusCode`.
@@ -40,6 +53,10 @@ impl Into<StatusCode> for ApiErrorType {
     fn into(self) -> StatusCode {
         match self {
             ApiErrorType::Backend => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiErrorType::InvalidUrl => StatusCode::BAD_REQUEST,
+            ApiErrorType::InvalidEditCode => StatusCode::BAD_REQUEST,
+            ApiErrorType::InvalidDocSize => StatusCode::BAD_REQUEST,
+            ApiErrorType::UrlTaken => StatusCode::CONFLICT,
         }
     }
 }
@@ -55,8 +72,8 @@ impl Into<StatusCode> for ApiErrorType {
 /// - `message`: A human-readable message describing the error.
 #[derive(Debug, Serialize)]
 pub struct ApiError {
-    error_type: ApiErrorType,
-    message: String,
+    pub error_type: ApiErrorType,
+    pub message: String,
 }
 
 /// Implements conversion from the internal `Error` enum to `ApiError`.
