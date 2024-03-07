@@ -10,7 +10,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link id="themeStylesheet" rel="stylesheet" href="/static/light.css">
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.css"
+        integrity="sha384-OH8qNTHoMMVNVcKdKewlipV4SErXqccxxlg6HC9Cwjr5oZu2AdBej1TndeCirael" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.js"
+        integrity="sha384-ImWHyYvDPlRzwFnvLhG9Jcpm/7qL4SVIuJK0C6Rj+Mf7fpeNJCLCynC+EVz4kCSA"
+        crossorigin="anonymous"></script>
+
     <style>
+        @font-face {
+            font-family: 'Soehne Buch';
+            src: url('soehne-buch.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body {
+            font-family: 'Soehne Buch', Arial, sans-serif;
+            /* Use the custom font */
+            /* font-size: 1.125rem; */
+            /* Adjusted font size */
+        }
+
         .navbar {
             /* background-color: #333; */
             padding: 10px 20px;
@@ -41,6 +61,8 @@
             color: #ddd;
             /* Lighter text/icon color */
         }
+
+        
     </style>
     {% block head %}{% endblock %}
 </head>
@@ -61,6 +83,15 @@
             const response = await fetch('http://localhost:3000/api/pastes/{{slug}}/html');
             const markdown = await response.json();
             document.getElementById('content').innerHTML = markdown.html;
+
+            for (let math of document.getElementsByClassName("language-math")) {
+                let span = document.createElement('span');
+                katex.render(math.innerText, span, { displayMode: true });
+                math.parentNode // <pre>
+                    .parentNode // context
+                    .replaceChild(span,   // new
+                        math.parentNode); // old
+            }
         }
 
         fetchMarkdown();
@@ -74,8 +105,8 @@
             localStorage.setItem('theme', newTheme);
 
             // Toggle icon visibility
-            document.querySelector('.fa-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
-            document.querySelector('.fa-sun').style.display = newTheme === 'light' ? 'none' : 'block';
+            document.querySelector('.fa-sun').style.display = newTheme === 'dark' ? 'none' : 'block';
+            document.querySelector('.fa-moon').style.display = newTheme === 'light' ? 'none' : 'block';
 
             // Update button style based on the theme
             const themeToggleBtn = document.getElementById('themeToggle');
@@ -93,8 +124,8 @@
             document.getElementById('themeStylesheet').href = `/static/${savedTheme}.css`;
 
             // Initialize icon visibility
-            document.querySelector('.fa-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
-            document.querySelector('.fa-sun').style.display = savedTheme === 'light' ? 'none' : 'block';
+            document.querySelector('.fa-sun').style.display = savedTheme === 'dark' ? 'none' : 'block';
+            document.querySelector('.fa-moon').style.display = savedTheme === 'light' ? 'none' : 'block';
 
             // Initialize button style based on the theme
             const themeToggleBtn = document.getElementById('themeToggle');
@@ -104,6 +135,8 @@
                 themeToggleBtn.classList.remove('dark-mode');
             }
         });
+
+
 
     </script>
 </body>

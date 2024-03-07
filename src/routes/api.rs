@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     db::{Database, DocumentHash, DocumentRecord, SlugRecord},
     errors::Error,
-    services::{create_paste, markdown_to_html},
+    services::{create_paste, markdown_to_html, markdown_to_html_pretty},
     state::AppState,
     validators::{is_invalid_document, is_invalid_edit_code, is_invalid_slug},
 };
@@ -240,7 +240,7 @@ async fn get_paste_html_handler(
     let slug_record = check_slug_exists(&state.db, slug)?;
     let doc_record = check_document_exists(&state.db, &slug_record.document_hash)?;
 
-    let html = markdown_to_html(&doc_record.content);
+    let html = markdown_to_html_pretty(&doc_record.content);
 
     Ok(Json(GetPasteHtmlResponse { html }))
     // Ok(MarkdownPreview { title: String::from("Markdown Document"), content: html })

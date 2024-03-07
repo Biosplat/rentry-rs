@@ -16,6 +16,7 @@ impl Database {
     pub fn new<P: AsRef<std::path::Path>>(path: P) -> Result<Self, sled::Error> {
         let db = sled::Config::default()
             .use_compression(true)
+            // .mode(sled::Mode::HighThroughput)
             .compression_factor(10)
             .path(path)
             .open()?;
