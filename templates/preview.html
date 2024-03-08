@@ -61,13 +61,20 @@
             color: #ddd;
             /* Lighter text/icon color */
         }
-
-        
     </style>
     {% block head %}{% endblock %}
 </head>
 
 <body>
+
+    {% match edit_code %}
+    {% when Some with (code) %}
+    <div class="bg-gray-800 p-4 rounded-md mt-4">
+        <p class="text-lg">Edit Code: <span class="font-bold">{{ code }}</span></p>
+    </div>
+    {% when None %}
+    {% endmatch %}
+
     <nav class="navbar">
         <div class="container">
             <!-- Other navbar content here -->

@@ -248,8 +248,9 @@ async fn get_paste_html_handler(
 
 /// Converts markdown content provided in the request body to HTML.
 /// Returns the rendered HTML content for preview or display purposes.
-async fn render_markdown_handler(_request: extract::Json<RenderMarkdown>) {
-    todo!()
+async fn render_markdown_handler(request: extract::Json<RenderMarkdown>) -> Json<RenderMarkdownResponse> {
+    let html = markdown_to_html_pretty(&request.content);
+    Json(RenderMarkdownResponse { html })
 }
 
 /// Represents the input structure for creating a new paste.
@@ -312,11 +313,13 @@ pub struct GetPasteHtmlResponse {
 /// Represents the input structure for converting markdown to HTML.
 #[derive(Debug, Deserialize)]
 pub struct RenderMarkdown {
+    content: String,
     // Fields to be determined
 }
 
 /// Represents the response structure containing the HTML-rendered markdown content.
 #[derive(Debug, Serialize)]
 pub struct RenderMarkdownResponse {
+    html: String,
     // Fields to be determined
 }

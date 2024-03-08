@@ -4,86 +4,95 @@
 
 {% block head %}
 {% call super() %}
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
     body {
-        background-color: #2D2D2D;
-        color: #CCCCCC;
-        font-family: 'Arial', sans-serif;
-        line-height: 1.6;
-        margin: 0;
-        padding: 20px;
-    }
-    a, a:hover {
-        text-decoration: none;
-    }
-    .container {
-        max-width: 800px;
-        margin: 40px auto;
-        padding: 20px; /* Ensure symmetric padding */
-        background-color: #333;
-        border-radius: 5px;
-        box-sizing: border-box; /* This ensures padding is included in width calculation */
-    }
-    h1 {
-        color: #FFFFFF;
-    }
-    p {
-        margin: 15px 0;
-    }
-    .btn {
-        display: inline-block;
-        background-color: #4A90E2;
-        color: #FFFFFF;
-        padding: 10px 20px;
-        border-radius: 5px;
-        transition: background-color 0.3s ease;
-        text-decoration: none;
-        margin-top: 20px; /* Adjust as needed */
-    }
-    .btn:hover {
-        background-color: #367bc3;
+        background-color: #121212;
+        color: #E0E0E0;
     }
     textarea {
-        width: 100%; /* Adjust based on padding and border */
-        height: 300px; /* Adjust height as needed */
-        background-color: #444;
-        color: #CCCCCC;
-        border: 1px solid #555;
-        border-radius: 4px;
-        padding: 10px;
-        margin: 0 auto; /* Adjust bottom margin as needed, remove side margins */
-        font-family: 'Courier New', Courier, monospace;
-        box-sizing: border-box; /* This ensures padding and border are included in the width */
+        background-color: #222222;
+        color: #E0E0E0;
+        border-color: #444444;
+    }
+    h1 {
+        color: #BB86FC;
+    }
+    p {
+        color: #E0E0E0;
+    }
+    button {
+        background-color: #BB86FC;
+        color: #121212;
+    }
+    button:hover {
+        background-color: #A167E6;
+    }
+    iframe {
+        border: none;
+        width: 100%;
+        height: 100%;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Welcome to Rentry</h1>
-    <p>Your simple, dark-themed markdown pastebin. Share and store markdown documents with ease.</p>
-    <textarea id="pasteContent" placeholder="Paste your markdown content here..."></textarea>
-    <a href="javascript:void(0);" class="btn" onclick="createPaste()">Create New Paste</a>
+<div class="container mx-auto py-8 px-4">
+    <h1 class="text-4xl font-bold mb-4">Welcome to Rentry</h1>
+    <p class="text-xl mb-8">Your simple, dark-themed markdown pastebin. Share and store markdown documents with ease.</p>
+    <div class="flex">
+        <div class="w-1/2 pr-4">
+            <textarea id="pasteContent" class="w-full h-96 p-4 rounded-md" placeholder="Paste your markdown content here..."></textarea>
+            <button id="createPasteBtn" class="px-4 py-2 rounded-md mt-4" onclick="createPaste()">Create New Paste</button>
+        </div>
+        <div class="w-1/2 pl-4">
+            <iframe id="markdownPreview" class="bg-gray-800 p-4 rounded-md h-96"></iframe>
+        </div>
+    </div>
 </div>
 <script>
-    async function createPaste() {
-        // Placeholder for the actual implementation
+    let debounceTimer;
+    const debounceDelay = 500; // Adjust the delay as needed
+
+    document.getElementById('pasteContent').addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(renderMarkdown, debounceDelay);
+    });
+
+    async function renderMarkdown() {
         const content = document.getElementById('pasteContent').value;
-        console.log('Content to create:', content);
-        // Here you will make the POST request to `/api/pastes`
-        // with the content of the textarea.
-        
-        let response = await fetch('/api/pastes', {
+        const response = await fetch('/api/markdown/render', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                content: content
-            })
+            body: JSON.stringify({ content })
         });
+        const data = await response.json();
+        const iframe = document.getElementById('markdownPreview');
+        iframe.srcdoc = `
+            <html>
+                <head>
+                    <link rel="stylesheet" href="/static/dark.css">
+                </head>
+                <body>
+                    <div id="markdownPreview">${data.html}</div>
+                </body>
+            </html>
+        `;
+    }
 
-        console.log(await response.json())
+    async function createPaste() {
+        const content = document.getElementById('pasteContent').value;
+        const response = await fetch('/api/pastes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content })
+        });
+        const data = await response.json();
+        window.location.href = `/p/${data.slug}?edit_code=${data.edit_code}`;
     }
 </script>
 {% endblock %}

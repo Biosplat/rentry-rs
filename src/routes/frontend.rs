@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use askama::Template;
 use axum::{extract, http::Uri, routing::{get, get_service}, Router};
 use tower_http::services::ServeDir;
@@ -61,8 +63,10 @@ async fn admin_handler() -> AdminTemplate {
 #[template(path="preview.html")]
 pub struct MarkdownPreview {
     slug: String,
+    edit_code: Option<String>,
 }
 
-async fn paste_handler(slug: extract::Path<String>) -> MarkdownPreview {
-    MarkdownPreview { slug: slug.0 }
+async fn paste_handler(slug: extract::Path<String>, query: extract::Query<HashMap<String, String>>) -> MarkdownPreview {
+    let edit_code = query.get("edit_code").cloned();
+    MarkdownPreview { slug: slug.0, edit_code }
 }
