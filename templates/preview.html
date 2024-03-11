@@ -8,7 +8,7 @@
     <title>{% block title %}Markdown Document{% endblock title %}</title>
     <!-- <link rel="stylesheet" href="/static/style.css"> -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link id="themeStylesheet" rel="stylesheet" href="/static/light.css">
+    <link id="themeStylesheet" rel="stylesheet" href="/static/markdown-light.css">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.css"
         integrity="sha384-OH8qNTHoMMVNVcKdKewlipV4SErXqccxxlg6HC9Cwjr5oZu2AdBej1TndeCirael" crossorigin="anonymous">
@@ -67,6 +67,7 @@
 
 <body>
 
+
     {% match edit_code %}
     {% when Some with (code) %}
     <div class="bg-gray-800 p-4 rounded-md mt-4">
@@ -108,7 +109,7 @@
             const currentTheme = localStorage.getItem('theme') || 'light';
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
 
-            document.getElementById('themeStylesheet').href = `/static/${newTheme}.css`;
+            document.getElementById('themeStylesheet').href = `/static/markdown-${newTheme}.css`;
             localStorage.setItem('theme', newTheme);
 
             // Toggle icon visibility
@@ -128,7 +129,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('theme') || 'light';
-            document.getElementById('themeStylesheet').href = `/static/${savedTheme}.css`;
+            document.getElementById('themeStylesheet').href = `/static/markdown-${savedTheme}.css`;
 
             // Initialize icon visibility
             document.querySelector('.fa-sun').style.display = savedTheme === 'dark' ? 'none' : 'block';

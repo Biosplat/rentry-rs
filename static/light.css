@@ -1,51 +1,30 @@
-/* General body styling */
+/* light.css */
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: #333;
+    background-color: #fff;
     padding: 20px;
-
-    max-width: 800px; /* Adjust this value to control the content width */
+    max-width: 800px;
     margin: auto;
 }
 
-/* Headings */
 h1, h2, h3, h4, h5, h6 {
     margin-top: 20px;
     margin-bottom: 10px;
     line-height: 1.2;
+    color: #333;
 }
 
 h1 {
     font-size: 2.5em;
 }
 
-h2 {
-    font-size: 2em;
-}
-
-h3 {
-    font-size: 1.75em;
-}
-
-h4 {
-    font-size: 1.5em;
-}
-
-h5 {
-    font-size: 1.25em;
-}
-
-h6 {
-    font-size: 1em;
-}
-
-/* Paragraphs */
 p {
     margin-bottom: 10px;
 }
 
-/* Links */
 a {
     color: #007bff;
     text-decoration: none;
@@ -55,68 +34,44 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Lists */
-ul, ol {
-    margin-bottom: 20px;
-    padding-left: 20px;
-}
-
-/* Blockquotes */
-blockquote {
-    margin: 20px 0;
-    padding: 10px 20px;
-    background-color: #f9f9f9;
-    border-left: 5px solid #ccc;
-}
-
-/* Code blocks */
-pre {
+textarea {
     background-color: #f4f4f4;
-    border: 1px solid #ddd;
-    padding: 10px;
-    margin-bottom: 20px;
-    overflow: auto;
-    font-family: 'Courier New', Courier, monospace;
-}
-
-/* Inline code */
-code {
-    background-color: #f4f4f4;
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-family: 'Courier New', Courier, monospace;
-}
-
-/* Images */
-img {
-    max-width: 100%;
-    height: auto;
-    margin-bottom: 20px;
-}
-
-/* Tables */
-table {
+    color: #333;
+    border-color: #ccc;
     width: 100%;
-    margin-bottom: 20px;
-    border-collapse: collapse;
-    border-top: 3px solid #333; /* Darker line above column headers */
+    padding: 10px;
+    border-radius: 4px;
 }
 
-th, td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid #ccc; /* Lighter lines for row separators */
+button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
 }
 
-th {
-    font-weight: bold;
-    background-color: transparent; /* No background color for headers */
+button:hover {
+    background-color: #0056b3;
 }
 
-/* Thematic break / horizontal rule */
-hr {
-    border: 0;
-    height: 1px;
-    background-color: #ccc;
-    margin: 20px 0;
+iframe {
+    border: none;
+    width: 100%;
+    height: 100%;
+}
+
+.navbar {
+    background-color: #f8f9fa;
+    padding: 10px 20px;
+    width: 100%;
+}
+
+.theme-toggle-btn {
+    background: none;
+    border: none;
+    color: #333;
+    cursor: pointer;
+    font-size: 20px;
 }

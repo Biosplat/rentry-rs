@@ -1,15 +1,50 @@
-<!-- src/templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{title}}{% endblock title %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <!-- <link id="themeStylesheet" rel="stylesheet" href="/static/light.css">
+    <link id="markdownStylesheet" rel="stylesheet" href="/static/markdown-light.css"> -->
     {% block head %}{% endblock %}
 </head>
 <body>
+    <nav class="navbar">
+        <div class="container">
+            <button id="themeToggle" class="theme-toggle-btn">
+                <i class="fas fa-moon"></i>
+                <i class="fas fa-sun" style="display: none;"></i>
+            </button>
+        </div>
+    </nav>
     <div id="content">
-        {% block content %}{{content}}{% endblock %}
+        {% block content %}{% endblock %}
     </div>
+    <script>
+        function switchTheme() {
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            document.getElementById('themeStylesheet').href = `/static/${newTheme}.css`;
+            document.getElementById('markdownStylesheet').href = `/static/markdown-${newTheme}.css`;
+            localStorage.setItem('theme', newTheme);
+
+            document.querySelector('.fa-sun').style.display = newTheme === 'dark' ? 'none' : 'block';
+            document.querySelector('.fa-moon').style.display = newTheme === 'light' ? 'none' : 'block';
+        }
+
+        document.getElementById('themeToggle').addEventListener('click', switchTheme);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.getElementById('themeStylesheet').href = `/static/${savedTheme}.css`;
+            document.getElementById('markdownStylesheet').href = `/static/markdown-${savedTheme}.css`;
+
+            document.querySelector('.fa-sun').style.display = savedTheme === 'dark' ? 'none' : 'block';
+            document.querySelector('.fa-moon').style.display = savedTheme === 'light' ? 'none' : 'block';
+        });
+    </script>
 </body>
 </html>
